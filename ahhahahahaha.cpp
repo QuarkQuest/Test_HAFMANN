@@ -169,8 +169,6 @@ void decode(const string& encodefile, const string& outputfile, unordered_map<ch
 int main() {
     system("chcp 1251");
     system("cls");
-    char arr[256];
-    int   chast[256];
     unordered_map<char, string> Haff;
     unordered_map<char, double> chastMap;
     Chast("input.txt", chastMap);
