@@ -10,7 +10,7 @@ int symbols = 0;
 class HufTree {
 public:
     char data;
-    double chast;
+    int chast;
     HufTree* left, * right;
     HufTree(char data, int chast) {
         this->data = data;
@@ -51,7 +51,7 @@ void printCodes(HufTree* root, string str)
     printCodes(root->left, str + "0");
     printCodes(root->right, str + "1");
 }
-void HafmanCE(char arr[], double chast[], int size, unordered_map<char, string>& Haff) {
+void HafmanCE(char arr[], int chast[], int size, unordered_map<char, string>& Haff) {
     HufTree* l, * r, * top;
 
     priority_queue<HufTree*, vector<HufTree*>, myComparator> minHeap;
@@ -81,29 +81,27 @@ void HafmanCE(char arr[], double chast[], int size, unordered_map<char, string>&
 
 }
 
-void Chast(const string& filename, char* arr, double* chast, int& size) {
+void Chast(const string& filename, char* arr, int* chast, int& size) {
     ifstream in(filename);
     char ch;
-    map<char, double> frequencies;
-
+    map<char, int> chastMap;
     while (in.get(ch)) {
         symbols++;
-        if (frequencies.find(ch) == frequencies.end()) {
-            frequencies[ch] = 1;
+        if (chastMap.find(ch) == chastMap.end()) {
+            chastMap[ch] = 1;
         }
         else {
-            frequencies[ch]++;
+            chastMap[ch]++;
         }
     }
     int totalChars = 0;
-    for (auto it : frequencies) {
+    for (auto it : chastMap) {
         totalChars += it.second;
     }
     size = 0;
-    for (auto it : frequencies) {
+    for (auto it : chastMap) {
         arr[size] = it.first;
-        chast[size] = (double)it.second * 100 / totalChars;
-        cout << arr[size] << " " << chast[size] << endl;
+        chast[size] = it.second * 100 / totalChars;
         size++;
     }
 
@@ -139,7 +137,7 @@ void encode(unordered_map<char, string>& Haff, const string& inputfile, const st
     encode.close();
     in.close();
 }
-void decode(unordered_map<char, string>& Haff,const string& encodefile, const string& outputfile) {
+void decode(const string& encodefile, const string& outputfile, unordered_map<char, string>& Haff) {
     ifstream encode(encodefile, ios_base::binary);
     ofstream output(outputfile);
     int size;
@@ -154,6 +152,7 @@ void decode(unordered_map<char, string>& Haff,const string& encodefile, const st
 
     unsigned char buffer = 0;
     string code;
+    int  i = 0;
     while (encode.read((char*)&buffer, 1)) {
         for (int i = 7; i >= 0; i--) {
             code += ((buffer >> i) & 1) ? '1' : '0';
@@ -166,6 +165,9 @@ void decode(unordered_map<char, string>& Haff,const string& encodefile, const st
         }
 
     }
+
+
+
     encode.close();
     output.close();
 }
@@ -174,12 +176,14 @@ int main() {
     system("chcp 1251");
     system("cls");
     char arr[256];
-    double chast[256];
+    int   chast[256];
     unordered_map<char, string> Haff;
     int size = 0;
 
     Chast("input.txt", arr, chast, size);
     HafmanCE(arr, chast, size, Haff);
     encode(Haff, "input.txt", "encode.bin");
-    decode(Haff,"encode.bin", "output.txt");
+    decode("encode.bin", "output.txt", Haff);
+
+    return 0;
 }
