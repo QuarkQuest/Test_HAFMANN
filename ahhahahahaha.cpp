@@ -51,13 +51,14 @@ void printCodes(HufTree* root, string str)
     printCodes(root->left, str + "0");
     printCodes(root->right, str + "1");
 }
-void HafmanCE(char arr[], int chast[], int size, unordered_map<char, string>& Haff) {
+void HafmanCE(unordered_map<char, double>& chastMap, unordered_map<char, string>& Haff) {
     HufTree* l, * r, * top;
 
     priority_queue<HufTree*, vector<HufTree*>, myComparator> minHeap;
-    for (int i = 0; i < size; ++i) {
-        minHeap.push(new HufTree(arr[i], chast[i]));
+    for (auto it : chastMap) {
+        minHeap.push(new HufTree(it.first, it.second));
     }
+
     while (minHeap.size() > 1) {
         l = minHeap.top();
         minHeap.pop();
@@ -81,10 +82,10 @@ void HafmanCE(char arr[], int chast[], int size, unordered_map<char, string>& Ha
 
 }
 
-void Chast(const string& filename, char* arr, int* chast, int& size) {
+void Chast(const string& filename, unordered_map<char, double>& chastMap) {
     ifstream in(filename);
     char ch;
-    map<char, int> chastMap;
+    
     while (in.get(ch)) {
         symbols++;
         if (chastMap.find(ch) == chastMap.end()) {
@@ -94,15 +95,8 @@ void Chast(const string& filename, char* arr, int* chast, int& size) {
             chastMap[ch]++;
         }
     }
-    int totalChars = 0;
     for (auto it : chastMap) {
-        totalChars += it.second;
-    }
-    size = 0;
-    for (auto it : chastMap) {
-        arr[size] = it.first;
-        chast[size] = it.second * 100 / totalChars;
-        size++;
+        it.second = it.second * 100 / symbols;
     }
 
 
@@ -178,10 +172,9 @@ int main() {
     char arr[256];
     int   chast[256];
     unordered_map<char, string> Haff;
-    int size = 0;
-
-    Chast("input.txt", arr, chast, size);
-    HafmanCE(arr, chast, size, Haff);
+    unordered_map<char, double> chastMap;
+    Chast("input.txt", chastMap);
+    HafmanCE(chastMap, Haff);
     encode(Haff, "input.txt", "encode.bin");
     decode("encode.bin", "output.txt", Haff);
 
