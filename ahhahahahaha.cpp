@@ -246,7 +246,7 @@ int main() {
     Chast("input.txt", chastMap);
     HafmanCE(chastMap, Haff);
     encode(Haff,chastMap, "input.txt", "encode.bin");
-    decode("encode.bin", "output.txt", Haff);
+    decode("encode.bin", "output.txt");
 
     return 0;
 }
