@@ -188,7 +188,7 @@ void encode(unordered_map<char, string>& Haff,map<char, double>& chastMap, const
     encode.close();
     in.close();
 }
-void decode(const string& encodefile, const string& outputfile, unordered_map<char, string>& Haff) {
+void decode(const string& encodefile, const string& outputfile) {
     ifstream encode(encodefile, ios_base::binary);
     ofstream output(outputfile);
     map<char, double> chastMap;
@@ -205,6 +205,9 @@ void decode(const string& encodefile, const string& outputfile, unordered_map<ch
         chastMap[temp] = out_1 + Mantissa;
         sizer--;
     }
+    for (auto it : chastMap) {
+    cout << it.first << " " << it.second << "\n";
+}
     unordered_map<string, char> re_Haff;
     HafmanCE(chastMap, re_Haff);
     for (auto it : re_Haff) {
