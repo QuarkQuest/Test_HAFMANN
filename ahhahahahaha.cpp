@@ -39,6 +39,18 @@ void CreateMap(unordered_map<char, string>& Haff, HufTree* root, string str) {
     CreateMap(Haff, root->left, str + "0");
     CreateMap(Haff, root->right, str + "1");
 }
+void CreateMap(unordered_map<string,char>& Haff, HufTree* root, string str) {
+    ;
+    if (!root)
+        return;
+
+    if (root->data != '$') {
+        Haff[str] = root->data;
+    }
+
+    CreateMap(Haff, root->left, str + "0");
+    CreateMap(Haff, root->right, str + "1");
+}
 void printCodes(HufTree* root, string str)
 {
 
@@ -51,7 +63,7 @@ void printCodes(HufTree* root, string str)
     printCodes(root->left, str + "0");
     printCodes(root->right, str + "1");
 }
-void HafmanCE(unordered_map<char, double>& chastMap, unordered_map<char, string>& Haff) {
+void HafmanCE(map<char, double>& chastMap, unordered_map<char, string>& Haff) {
     HufTree* l, * r, * top;
 
     priority_queue<HufTree*, vector<HufTree*>, myComparator> minHeap;
@@ -75,14 +87,44 @@ void HafmanCE(unordered_map<char, double>& chastMap, unordered_map<char, string>
     }
     //printCodes(minHeap.top(), "");
     CreateMap(Haff, minHeap.top(), "");
-    for (auto it : Haff) {
-        cout << it.first << " " << it.second << "\n";
+    //for (auto it : Haff) {
+    //    cout << it.first << " " << it.second << "\n";
+    //}
+
+
+}
+void HafmanCE(map<char, double>& chastMap, unordered_map<string,char>& Haff) {
+    HufTree* l, * r, * top;
+
+    priority_queue<HufTree*, vector<HufTree*>, myComparator> minHeap;
+    for (auto it : chastMap) {
+        minHeap.push(new HufTree(it.first, it.second));
     }
+
+    while (minHeap.size() > 1) {
+        l = minHeap.top();
+        minHeap.pop();
+
+        r = minHeap.top();
+        minHeap.pop();
+
+        top = new HufTree('$', l->chast + r->chast);
+
+        top->left = l;
+        top->right = r;
+
+        minHeap.push(top);
+    }
+    //printCodes(minHeap.top(), "");
+    CreateMap(Haff, minHeap.top(), "");
+    //for (auto it : Haff) {
+    //    cout << it.first << " " << it.second << "\n";
+    //}
 
 
 }
 
-void Chast(const string& filename, unordered_map<char, double>& chastMap) {
+void Chast(const string& filename, map<char, double>& chastMap) {
     ifstream in(filename);
     char ch;
     
@@ -95,20 +137,35 @@ void Chast(const string& filename, unordered_map<char, double>& chastMap) {
             chastMap[ch]++;
         }
     }
-    for (auto it : chastMap) {
+    for (auto &it : chastMap) {
         it.second = it.second * 100 / symbols;
+        it.second = round(it.second * 100.0) / 100.0;
+        //cout <<it.first << "  " << it.second << endl;
     }
-
 
     in.close();
 }
-void encode(unordered_map<char, string>& Haff, const string& inputfile, const string& encodefile) {
+void encode(unordered_map<char, string>& Haff,map<char, double>& chastMap, const string& inputfile, const string& encodefile) {
     ofstream encode(encodefile, ios_base::binary);
 
     unsigned char buffer = 0;
+    unsigned int sizer = chastMap.size();
+    encode.write((char*)&sizer, 1);
+    for (auto it : chastMap) {
+        encode.write((char*)&it.first, 1);
+
+        int exponent = static_cast<int>(it.second);
+        int mantissa = static_cast<int>((it.second - exponent) * 100);
+
+        encode.write((char*)&exponent, 1);
+        encode.write((char*)&mantissa, 1);
+    }
+    
+
+    //cout << "size = " << Haff.size() << endl;
+    ifstream in(inputfile);
     int size = 0;
     encode.write((char*)&symbols, sizeof(int));
-    ifstream in(inputfile);
     char ch;
     while (in.get(ch)) {
         string code = Haff[ch];
@@ -134,15 +191,27 @@ void encode(unordered_map<char, string>& Haff, const string& inputfile, const st
 void decode(const string& encodefile, const string& outputfile, unordered_map<char, string>& Haff) {
     ifstream encode(encodefile, ios_base::binary);
     ofstream output(outputfile);
+    map<char, double> chastMap;
+    unsigned int sizer = 0;
+    int out_1 = 0;
+    int out_2 = 0;
+    char temp;
+    encode.read((char*)&sizer, 1);
+    while (sizer > 0) {
+        encode.read((char*)&temp, 1);
+        encode.read((char*)&out_1, 1);
+        encode.read((char*)&out_2, 1);
+        double Mantissa = static_cast<double>(out_2) / 100;
+        chastMap[temp] = out_1 + Mantissa;
+        sizer--;
+    }
+    unordered_map<string, char> re_Haff;
+    HafmanCE(chastMap, re_Haff);
+    for (auto it : re_Haff) {
+        cout << it.first << " " << it.second << endl;
+    }
     int size;
     encode.read((char*)&size, sizeof(int));
-    unordered_map<string, char> reverse_Haff;
-    for (auto& it : Haff) {
-        reverse_Haff[it.second] = it.first;
-    }
-    for (auto it : reverse_Haff) {
-        cout << it.first << " " << it.second << "\n";
-    }
 
     unsigned char buffer = 0;
     string code;
@@ -151,9 +220,9 @@ void decode(const string& encodefile, const string& outputfile, unordered_map<ch
         for (int i = 7; i >= 0; i--) {
             code += ((buffer >> i) & 1) ? '1' : '0';
 
-            if (reverse_Haff.count(code) && size != 0) {
+            if (re_Haff.count(code) && size != 0) {
                 size--;
-                output << reverse_Haff[code];
+                output << re_Haff[code];
                 code.clear();
             }
         }
@@ -170,10 +239,10 @@ int main() {
     system("chcp 1251");
     system("cls");
     unordered_map<char, string> Haff;
-    unordered_map<char, double> chastMap;
+    map<char, double> chastMap;
     Chast("input.txt", chastMap);
     HafmanCE(chastMap, Haff);
-    encode(Haff, "input.txt", "encode.bin");
+    encode(Haff,chastMap, "input.txt", "encode.bin");
     decode("encode.bin", "output.txt", Haff);
 
     return 0;
